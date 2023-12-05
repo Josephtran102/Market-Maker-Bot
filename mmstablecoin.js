@@ -9,7 +9,7 @@ require("dotenv").config();
 const tokenA = '0x07865c6e87b9f70255377e024ace6630c1eaa37f'; 
 const TokenB = '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6'; 
 const routerAddress = '0xE592427A0AEce92De3Edee1F18E0157C05861564'; // Uniswap Router mainnet: 0xeC8B0F7Ffe3ae75d7FfAb09429e3675bb63503e4
-const quoterAddress = '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6'; // Uniswap Quoter mainnet:
+// const quoterAddress = '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6'; // Uniswap Quoter mainnet:
 
 const fee = 500; // Uniswap pool fee bps 500, 3000, 10000
 const buyAmount_tokenA = BigInt(100); // Giá trị USDC bạn muốn mua
@@ -17,7 +17,7 @@ const buyAmount_tokenA = BigInt(100); // Giá trị USDC bạn muốn mua
 function calculateBuyAmount(tokenA_Amount) {
   // Tính toán buyAmount từ giá trị USDC
   const usdcDecimals = BigInt(1e6); // Định dạng số chữ số thập phân cho USDC
-  return tokenA_Amount * usdcDecimals;
+  return BigInt(tokenA_Amount) * usdcDecimals;
 }
 
 const buyAmount = calculateBuyAmount(buyAmount_tokenA); // Chuyển đổi USDC thành WEI
@@ -32,7 +32,7 @@ const targetPrice = ethers.utils.parseUnits('0.00000282844', 'ether');; // targe
 // const targetPrice = BigInt(35136400);
 const targetAmountOut = BigInt(buyAmount) * BigInt(targetPrice);
 // const sellAmount = BigInt(buyAmount) / BigInt(targetPrice);
-const tradeFrequency = 3600 * 1000; // ms (once per hour) đơn vị mili giây
+const tradeFrequency = 15 * 1000; // ms (once per hour) đơn vị mili giây
 
 // `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`
 const provider = new ethers.providers.JsonRpcProvider(process.env.ETH_NODE_URL);
@@ -54,11 +54,11 @@ const router = new ethers.Contract(
   account
 );
 
-const quoter = new ethers.Contract(
-  quoterAddress,
-  ['function quoteExactInputSingle(address tokenIn, address tokenOut, uint24 fee, uint256 amountIn, uint160 sqrtPriceLimitX96) public view returns (uint256 amountOut)'],
-  account
-);
+// const quoter = new ethers.Contract(
+//   quoterAddress,
+//   ['function quoteExactInputSingle(address tokenIn, address tokenOut, uint24 fee, uint256 amountIn, uint160 sqrtPriceLimitX96) public view returns (uint256 amountOut)'],
+//   account
+// );
 
 const buyTokens = async () => {
   console.log('Buying Tokens...')
@@ -69,7 +69,7 @@ const buyTokens = async () => {
   console.log('Done!🎉🎉🎉');
   console.log(`TX details: https://goerli.etherscan.io/tx/${tx.hash}\n`);
 }
-
+// ----------------------------------------------------------------------------------------
 // const sellTokens = async () => {
 //   console.log('Selling... Tokens')
 //   const allowance = await token.allowance(wallet.address, routerAddress);
@@ -84,25 +84,28 @@ const buyTokens = async () => {
 //   await tx.wait();
 //   console.log(tx.hash);
 // }
+// ----------------------------------------------------------------------------------------
+// const checkPrice = async () => {
+//   const amountOut = await quoter.quoteExactInputSingle(tokenA, TokenB, fee, buyAmount, 0);
 
-const checkPrice = async () => {
-  const amountOut = await quoter.quoteExactInputSingle(tokenA, TokenB, fee, buyAmount, 0);
-
-  console.log(`100 USDC will buy: ${amountOut / 1e18} WETH`);
+//   console.log(`100 USDC will buy: ${amountOut / 1e18} WETH`);
   
-  // Chuyển đổi giá trị BigInt về dạng số nguyên thông thường trước khi thực hiện phép chia
-  const amountOutFloat = parseFloat(amountOut.toString());
-  const buyAmountFloat = parseFloat(buyAmount.toString());
+//   // Chuyển đổi giá trị BigInt về dạng số nguyên thông thường trước khi thực hiện phép chia
+//   const amountOutFloat = parseFloat(amountOut.toString());
+//   const buyAmountFloat = parseFloat(buyAmount.toString());
 
-  console.log(`Current Exchange Rate: ${amountOutFloat / buyAmountFloat}`,"WETH per USDC");
+//   console.log(`Current Exchange Rate: ${amountOutFloat / buyAmountFloat}`,"WETH per USDC");
 
-  if (amountOut < targetAmountOut) buyTokens();
-
-
-  // if (amountOut > targetAmountOut) sellTokens();
-}
-
-checkPrice();
-setInterval(() => {
-  checkPrice();
+//   if (amountOut < targetAmountOut) buyTokens();
+buyTokens();
+setInterval(async () => {
+  await buyTokens();
 }, tradeFrequency);
+
+//   // if (amountOut > targetAmountOut) sellTokens();
+// }
+
+// checkPrice();
+// setInterval(() => {
+//   checkPrice();
+// }, tradeFrequency);
